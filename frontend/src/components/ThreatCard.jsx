@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const severityColors = {
   CRITICAL: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30',
@@ -17,14 +18,14 @@ const severityBorder = {
   UNKNOWN: 'border-l-slate-500',
 };
 
-export default function ThreatCard({ threat, onClick }) {
+export default function ThreatCard({ threat }) {
+  const navigate = useNavigate();
   const sevColor = severityColors[threat.severity?.toUpperCase()] || severityColors.UNKNOWN;
   const leftBorder = severityBorder[threat.severity?.toUpperCase()] || severityBorder.UNKNOWN;
 
   return (
     <motion.div 
-      onClick={() => onClick(threat)}
-      className={`liquid-glass p-5 rounded-xl border border-white/10 hover:border-primary/40 hover:shadow-[0_0_20px_rgba(94,210,156,0.15)] transition duration-300 cursor-pointer flex flex-col justify-between group h-full border-l-4 ${leftBorder}`}
+      className={`liquid-glass p-5 rounded-xl border border-white/10 hover:border-primary/40 hover:shadow-[0_0_20px_rgba(94,210,156,0.15)] transition duration-300 flex flex-col justify-between group h-full border-l-4 ${leftBorder}`}
     >
       <div>
         <div className="flex justify-between items-start mb-3">
@@ -41,8 +42,13 @@ export default function ThreatCard({ threat, onClick }) {
       </div>
       <div className="mt-4 pt-4 border-t border-black/5 dark:border-white/10 flex justify-between items-center text-xs text-slate-500 dark:text-slate-400">
         <span>{threat.date !== 'Unknown' ? new Date(threat.date).toLocaleDateString() : 'Unknown Date'}</span>
-        <span className="group-hover:text-amber-500">View Summary ➔</span>
       </div>
+      <button 
+        onClick={() => navigate(`/cve/${threat.id}`)}
+        className="text-primary hover:underline text-sm mt-3 text-left"
+      >
+        View Details &rarr;
+      </button>
     </motion.div>
   );
 }

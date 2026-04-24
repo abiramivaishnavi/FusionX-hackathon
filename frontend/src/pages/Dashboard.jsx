@@ -3,14 +3,11 @@ import axios from 'axios';
 import { Shield, AlertTriangle, AlertCircle, Activity, Loader2 } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import ThreatCard from '../components/ThreatCard';
-import SummaryModal from '../components/SummaryModal';
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [threats, setThreats] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  const [selectedThreat, setSelectedThreat] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -72,16 +69,10 @@ export default function Dashboard() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {threats.map(threat => (
-            <ThreatCard key={threat.id} threat={threat} onClick={(t) => setSelectedThreat(t)} />
+            <ThreatCard key={threat.id} threat={threat} />
           ))}
         </div>
       </div>
-
-      <SummaryModal 
-        isOpen={!!selectedThreat} 
-        threatId={selectedThreat?.id} 
-        onClose={() => setSelectedThreat(null)} 
-      />
     </div>
   );
 }

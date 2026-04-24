@@ -8,6 +8,7 @@ export default function Navbar() {
 
   const navLinks = [
     { label: 'DASHBOARD', to: '/dashboard' },
+    { label: 'RECOMMENDATIONS', to: '/recommendations' },
     { label: 'ANALYTICS', to: '/analytics' },
     { label: 'PROFILE', to: '/profile' },
   ];

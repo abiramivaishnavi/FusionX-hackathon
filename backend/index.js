@@ -6,6 +6,7 @@ const threatsRoute = require("./routes/threats");
 const statsRoute = require("./routes/stats");
 const summaryRoute = require("./routes/summary");
 const trendsRoute = require("./routes/trends");
+const recommendationsRoute = require("./routes/recommendations");
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use("/api/threats", threatsRoute);
 app.use("/api/stats", statsRoute);
 app.use("/api/summary", summaryRoute);
 app.use("/api/trends", trendsRoute);
+app.use("/api/recommendations", recommendationsRoute);
 
 const PORT = process.env.PORT || 5000;
 
