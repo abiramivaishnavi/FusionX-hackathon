@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply transition-colors duration-500 ease-in-out font-sans m-0 p-0 text-slate-800 dark:text-white bg-slate-50;
+  }
+}
+
+@layer components {
+  /* Dynamic Background for App Root */
+  .app-bg {
+    @apply min-h-screen bg-slate-50 dark:bg-gradient-to-br dark:from-[#0f0c29] dark:via-[#302b63] dark:to-[#24243e];
+  }
+
+  /* Core Glassmorphism Component */
+  .glass-card {
+    @apply bg-white/70 dark:bg-black/20 backdrop-blur-xl border border-white/50 dark:border-white/10 rounded-2xl shadow-xl;
+  }
+  
+  /* Interactive Glassmorphism Component */
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300 hover:shadow-xl dark:hover:shadow-neon hover:border-purple-300 dark:hover:border-cyber-accent/50 hover:-translate-y-1;
+  }
+}
