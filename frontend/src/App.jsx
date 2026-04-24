@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
+import Profile from './pages/Profile';
 import Login from './pages/Login';
 
 // Auth context for managing login state across the app
@@ -45,6 +46,7 @@ function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/profile" element={<Profile />} />
                   </Routes>
                 </main>
               </div>

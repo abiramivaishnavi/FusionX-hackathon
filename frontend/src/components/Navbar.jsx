@@ -36,8 +36,19 @@ export default function Navbar() {
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <ThemeToggle />
+          <Link
+            to="/profile"
+            id="navbar-profile-btn"
+            className={`w-9 h-9 rounded-full overflow-hidden border-2 transition-all duration-300 hover:scale-110 ${
+              location.pathname === '/profile'
+                ? 'border-cyber-accent shadow-neon'
+                : 'border-slate-300 dark:border-white/20 hover:border-cyber-accent/60'
+            }`}
+          >
+            <img src="/default-avatar.png" alt="Profile" className="w-full h-full object-cover" />
+          </Link>
         </div>
       </div>
     </nav>
