@@ -42,7 +42,7 @@ export default function Analytics() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Loader2 className="w-12 h-12 animate-spin text-indigo-500 dark:text-cyber-neon" />
+        <Loader2 className="w-12 h-12 animate-spin text-emerald-500 dark:text-cyber-neon" />
         <p className="text-slate-500 dark:text-slate-400 font-medium animate-pulse">Processing analytics...</p>
       </div>
     );
@@ -50,16 +50,17 @@ export default function Analytics() {
 
   return (
     <div className="space-y-10 font-sans pb-10 animate-in slide-in-from-bottom-4 duration-700">
-      <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white flex items-center gap-3">
-        <TrendingUp className="text-indigo-500 dark:text-cyber-neon w-10 h-10" /> 
+      <h2 className="text-3xl font-semibold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent flex items-center gap-3">
+        <TrendingUp className="text-primary w-10 h-10" /> 
         Threat Analytics
       </h2>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {/* Trend Area Chart */}
-        <div className="glass-card p-6 h-[400px] flex flex-col">
-          <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200 mb-6 drop-shadow-sm">Vulnerability Discovery Trends</h3>
-          <div className="flex-1 w-full min-h-0 text-xs">
+        <div className="liquid-glass p-6 rounded-xl border border-white/10 backdrop-blur-xl relative flex flex-col h-[400px]">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none" />
+          <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200 mb-6 drop-shadow-sm relative z-10">Vulnerability Discovery Trends</h3>
+          <div className="flex-1 w-full min-h-0 text-xs relative z-10">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <defs>
@@ -71,40 +72,53 @@ export default function Analytics() {
                     <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
                     <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
                   </linearGradient>
+                  <filter id="glowCritical" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="4" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                  </filter>
+                  <filter id="glowHigh" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="4" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                  </filter>
+                  <filter id="glowMedium" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="4" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                  </filter>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
-                <XAxis dataKey="date" stroke="#8b5cf6" />
-                <YAxis stroke="#8b5cf6" />
+                <XAxis dataKey="date" stroke="#5ed29c" />
+                <YAxis stroke="#5ed29c" />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: 'rgba(15, 12, 41, 0.95)', borderColor: '#b829ff', borderRadius: '12px', color: '#fff' }} 
+                  contentStyle={{ backgroundColor: 'rgba(7, 11, 10, 0.95)', borderColor: '#5ed29c', borderRadius: '12px', color: '#fff' }} 
                   itemStyle={{ color: '#fff', fontSize: '14px' }}
                 />
                 <Legend iconType="circle" />
-                <Area type="monotone" dataKey="Critical" stroke="#ef4444" fillOpacity={1} fill="url(#colorCritical)" />
-                <Area type="monotone" dataKey="High" stroke="#f97316" fillOpacity={1} fill="url(#colorHigh)" />
-                <Area type="monotone" dataKey="Medium" stroke="#eab308" fillOpacity={0.6} fill="#eab308" />
+                <Area type="monotone" dataKey="Critical" stroke="#ef4444" fillOpacity={1} fill="url(#colorCritical)" style={{ filter: 'url(#glowCritical)' }} />
+                <Area type="monotone" dataKey="High" stroke="#f97316" fillOpacity={1} fill="url(#colorHigh)" style={{ filter: 'url(#glowHigh)' }} />
+                <Area type="monotone" dataKey="Medium" stroke="#eab308" fillOpacity={0.6} fill="#eab308" style={{ filter: 'url(#glowMedium)' }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Severity Bar Chart */}
-        <div className="glass-card p-6 h-[400px] flex flex-col">
-          <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200 mb-6 drop-shadow-sm">Aggregate Severity Distribution</h3>
-          <div className="flex-1 w-full min-h-0 text-xs text-slate-200 dark:text-white">
+        <div className="liquid-glass p-6 rounded-xl border border-white/10 backdrop-blur-xl relative flex flex-col h-[400px]">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none" />
+          <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200 mb-6 drop-shadow-sm relative z-10">Aggregate Severity Distribution</h3>
+          <div className="flex-1 w-full min-h-0 text-xs text-slate-200 dark:text-white relative z-10">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={statsData} margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
-                <XAxis dataKey="name" stroke="#8b5cf6" />
-                <YAxis stroke="#8b5cf6" />
+                <XAxis dataKey="name" stroke="#5ed29c" />
+                <YAxis stroke="#5ed29c" />
                 <Tooltip 
                   cursor={{fill: 'rgba(255,255,255,0.05)'}} 
-                  contentStyle={{ backgroundColor: 'rgba(15, 12, 41, 0.95)', borderColor: '#b829ff', borderRadius: '12px', color: '#fff' }} 
+                  contentStyle={{ backgroundColor: 'rgba(7, 11, 10, 0.95)', borderColor: '#5ed29c', borderRadius: '12px', color: '#fff' }} 
                   itemStyle={{ fontSize: '14px' }}
                 />
                 <Bar dataKey="count" radius={[8, 8, 0, 0]}>
                   {statsData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                    <Cell key={`cell-${index}`} fill={entry.fill} style={{ filter: `drop-shadow(0 0 8px ${entry.fill}80)` }} />
                   ))}
                 </Bar>
               </BarChart>

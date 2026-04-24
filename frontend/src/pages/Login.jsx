@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight, Zap, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../App';
+import { useAuth } from '../context/AuthContext';
+import { auth } from '../lib/firebase';
+import { GoogleAuthProvider, GithubAuthProvider, signInWithPopup } from 'firebase/auth';
 
 // Floating particle component for the cyber background
 function FloatingParticles() {
@@ -113,16 +115,42 @@ export default function Login() {
     await new Promise((resolve) => setTimeout(resolve, 1800));
 
     setIsLoading(false);
-    // Mark as authenticated and navigate to dashboard
-    login();
-    navigate('/');
+    navigate('/dashboard');
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      navigate('/dashboard');
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'Failed to login with Google');
+      setIsLoading(false);
+    }
+  };
+
+  const handleGithubLogin = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      const provider = new GithubAuthProvider();
+      await signInWithPopup(auth, provider);
+      navigate('/dashboard');
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'Failed to login with GitHub');
+      setIsLoading(false);
+    }
   };
 
   const inputClasses =
     'w-full px-4 py-3.5 pl-12 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-cyber-accent/60 focus:ring-2 focus:ring-cyber-accent/20 transition-all duration-300 backdrop-blur-sm';
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-[#0a0820] via-[#0f0c29] to-[#1a1145]">
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-transparent z-10">
       {/* Animated Background Elements */}
       <FloatingParticles />
       <CyberGrid />
@@ -131,7 +159,7 @@ export default function Login() {
       {/* Large glowing orbs */}
       <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-cyber-accent/8 rounded-full blur-[150px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-cyber-neon/6 rounded-full blur-[180px] pointer-events-none" />
-      <div className="absolute top-[40%] left-[60%] w-[300px] h-[300px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-[40%] left-[60%] w-[300px] h-[300px] bg-emerald-600/10 rounded-full blur-[100px] pointer-events-none" />
 
       {/* Main Login Card */}
       <motion.div
@@ -141,7 +169,7 @@ export default function Login() {
         className="relative z-20 w-full max-w-md mx-4"
       >
         {/* Card glow effect */}
-        <div className="absolute -inset-1 bg-gradient-to-r from-cyber-accent/20 via-purple-600/20 to-cyber-neon/20 rounded-3xl blur-xl opacity-60" />
+        <div className="absolute -inset-1 bg-gradient-to-r from-cyber-accent/20 via-emerald-600/20 to-cyber-neon/20 rounded-3xl blur-xl opacity-60" />
 
         <div className="relative bg-black/30 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 md:p-10 shadow-2xl">
           {/* Logo & Title */}
@@ -152,13 +180,7 @@ export default function Login() {
             className="text-center mb-8"
           >
             <div className="flex items-center justify-center gap-3 mb-4">
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                <Shield className="w-10 h-10 text-cyber-neon drop-shadow-[0_0_15px_rgba(0,243,255,0.6)]" />
-              </motion.div>
-              <h1 className="text-3xl font-extrabold tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-cyber-neon via-purple-400 to-cyber-accent">
+              <h1 className="text-4xl font-grift font-extrabold tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-cyber-neon via-emerald-400 to-cyber-accent">
                 CyberPulse
               </h1>
             </div>
@@ -180,7 +202,7 @@ export default function Login() {
                 }}
                 className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-300 ${
                   (idx === 0 ? isLogin : !isLogin)
-                    ? 'bg-gradient-to-r from-cyber-accent/30 to-purple-600/30 text-white border border-cyber-accent/30 shadow-lg shadow-cyber-accent/10'
+                    ? 'bg-gradient-to-r from-cyber-accent/30 to-emerald-600/30 text-white border border-cyber-accent/30 shadow-lg shadow-cyber-accent/10'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -313,9 +335,9 @@ export default function Login() {
             <motion.button
               type="submit"
               disabled={isLoading}
-              whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(184, 41, 255, 0.5)' }}
+              whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(94, 210, 156, 0.5)' }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-4 mt-2 bg-gradient-to-r from-purple-600 via-cyber-accent to-purple-600 bg-[length:200%_auto] text-white font-bold rounded-xl text-base shadow-xl shadow-cyber-accent/20 transition-all duration-500 hover:bg-right disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden group"
+              className="w-full py-4 mt-2 bg-gradient-to-r from-emerald-600 via-cyber-accent to-emerald-600 bg-[length:200%_auto] text-white font-bold rounded-xl text-base shadow-xl shadow-cyber-accent/20 transition-all duration-500 hover:bg-right disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden group"
               id="login-submit-btn"
             >
               {/* Shimmer effect */}
@@ -350,7 +372,9 @@ export default function Login() {
           <div className="flex gap-3">
             <button
               type="button"
-              className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-slate-300 hover:bg-white/10 hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2"
+              onClick={handleGithubLogin}
+              disabled={isLoading}
+              className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-slate-300 hover:bg-white/10 hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
               id="login-github-btn"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -360,7 +384,9 @@ export default function Login() {
             </button>
             <button
               type="button"
-              className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-slate-300 hover:bg-white/10 hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2"
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
+              className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-slate-300 hover:bg-white/10 hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
               id="login-google-btn"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">

@@ -5,7 +5,7 @@ import {
   Eye, EyeOff, Save, CheckCircle, Activity, Clock,
   AlertTriangle, Search, LogOut, ChevronRight
 } from 'lucide-react';
-import { useAuth } from '../App';
+import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 // --- Section Wrapper ---
@@ -15,10 +15,10 @@ function Section({ title, icon: Icon, children, delay = 0 }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay }}
-      className="glass-card p-6 md:p-8"
+      className="liquid-glass p-6 md:p-8 rounded-xl border border-white/10 backdrop-blur-xl"
     >
       <h2 className="flex items-center gap-3 text-lg font-bold text-slate-800 dark:text-white mb-6">
-        <div className="p-2 rounded-xl bg-gradient-to-br from-purple-600 to-cyber-accent shadow-lg">
+        <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-600 to-cyber-accent shadow-lg">
           <Icon className="w-5 h-5 text-white" />
         </div>
         {title}
@@ -50,7 +50,7 @@ function Toast({ message, visible, onClose }) {
 
 // --- Shared input style ---
 const inputClass =
-  'w-full px-4 py-3 bg-white/60 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-cyber-accent/60 focus:ring-2 focus:ring-cyber-accent/20 transition-all duration-300';
+  'bg-transparent border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-2 w-full transition duration-300 text-white placeholder-slate-400';
 
 export default function Profile() {
   const { logout } = useAuth();
@@ -76,9 +76,7 @@ export default function Profile() {
     newCVE: false,
     emailNotifs: true,
   });
-  const [isDark, setIsDark] = useState(() =>
-    document.documentElement.classList.contains('dark')
-  );
+  const [isDark, setIsDark] = useState(true);
 
   // --- Activity State (simulated) ---
   const [activity] = useState({
@@ -142,7 +140,7 @@ export default function Profile() {
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-800 dark:text-white">My Profile</h1>
+          <h1 className="text-3xl font-semibold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">My Profile</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your account and preferences</p>
         </div>
         <button onClick={handleLogout} id="profile-logout-btn" className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all text-sm font-medium">
@@ -151,10 +149,10 @@ export default function Profile() {
       </motion.div>
 
       {/* Tab Selector */}
-      <div className="flex gap-2 p-1 glass-card w-fit">
+      <div className="flex gap-2 p-1 liquid-glass rounded-xl border border-white/10 w-fit">
         {tabs.map((tab) => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${activeTab === tab.id ? 'bg-gradient-to-r from-purple-600/30 to-cyber-accent/30 text-white border border-cyber-accent/30 shadow-lg shadow-cyber-accent/10' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${activeTab === tab.id ? 'bg-gradient-to-r from-emerald-600/30 to-cyber-accent/30 text-white border border-cyber-accent/30 shadow-lg shadow-cyber-accent/10' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
             id={`tab-${tab.id}`}
           >
             <tab.icon className="w-4 h-4" /> {tab.label}
@@ -166,10 +164,11 @@ export default function Profile() {
       {activeTab === 'profile' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left — Avatar Card */}
-          <Section title="Profile Picture" icon={Camera} delay={0}>
-            <div className="flex flex-col items-center gap-5">
-              <div className="relative group">
-                <div className="w-36 h-36 rounded-2xl overflow-hidden border-2 border-cyber-accent/30 shadow-neon">
+          <div className="liquid-glass p-6 rounded-xl border border-white/10 text-center relative h-fit">
+            <div className="flex flex-col items-center gap-5 relative z-10">
+              <div className="relative group flex items-center justify-center">
+                <div className="absolute w-40 h-40 bg-primary/20 blur-3xl rounded-full" />
+                <div className="w-36 h-36 rounded-2xl overflow-hidden border-2 border-cyber-accent/30 shadow-neon relative z-10">
                   <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />
                 </div>
                 <label htmlFor="avatar-upload" className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity cursor-pointer">
@@ -185,7 +184,7 @@ export default function Profile() {
                 </span>
               </div>
             </div>
-          </Section>
+          </div>
 
           {/* Right — Edit Form */}
           <div className="lg:col-span-2">
@@ -212,8 +211,8 @@ export default function Profile() {
                   </select>
                 </div>
                 <div className="flex justify-end pt-2">
-                  <motion.button type="submit" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} id="save-profile-btn"
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-cyber-accent text-white font-bold rounded-xl shadow-xl shadow-cyber-accent/20 hover:shadow-neon transition-all">
+                  <motion.button type="submit" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} id="save-profile-btn"
+                    className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white rounded-full px-6 py-3 shadow-lg shadow-primary/20 font-bold transition duration-300">
                     <Save className="w-4 h-4" /> Save Changes
                   </motion.button>
                 </div>
@@ -246,8 +245,8 @@ export default function Profile() {
                   </div>
                 </div>
               ))}
-              <motion.button type="submit" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} id="change-pw-btn"
-                className="w-full mt-2 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-cyber-accent text-white font-bold rounded-xl shadow-xl shadow-cyber-accent/20 transition-all">
+              <motion.button type="submit" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} id="change-pw-btn"
+                className="w-full mt-2 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white rounded-full px-6 py-3 shadow-lg shadow-primary/20 font-bold transition duration-300">
                 <Lock className="w-4 h-4" /> Update Password
               </motion.button>
             </form>
@@ -269,7 +268,7 @@ export default function Profile() {
                       <p className="text-xs text-slate-400 dark:text-slate-500">{item.desc}</p>
                     </div>
                     <button onClick={() => setNotifications({ ...notifications, [item.key]: !notifications[item.key] })}
-                      className={`w-12 h-7 rounded-full transition-all duration-300 relative ${notifications[item.key] ? 'bg-gradient-to-r from-purple-600 to-cyber-accent' : 'bg-slate-300 dark:bg-slate-600'}`}
+                      className={`w-12 h-7 rounded-full transition-all duration-300 relative ${notifications[item.key] ? 'bg-gradient-to-r from-emerald-600 to-cyber-accent' : 'bg-slate-300 dark:bg-slate-600'}`}
                       id={`toggle-${item.key}`}>
                       <div className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-all duration-300 shadow ${notifications[item.key] ? 'left-6' : 'left-1'}`} />
                     </button>
@@ -278,21 +277,7 @@ export default function Profile() {
               </div>
             </Section>
 
-            <Section title="Theme Preference" icon={isDark ? Moon : Sun} delay={0.2}>
-              <div className="flex gap-4">
-                {[
-                  { dark: false, label: 'Light', icon: Sun, desc: 'Clean & bright' },
-                  { dark: true, label: 'Dark', icon: Moon, desc: 'Cyber aesthetic' },
-                ].map((opt) => (
-                  <button key={opt.label} onClick={() => setIsDark(opt.dark)} id={`theme-${opt.label.toLowerCase()}`}
-                    className={`flex-1 flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all duration-300 ${isDark === opt.dark ? 'border-cyber-accent/60 bg-cyber-accent/10 shadow-neon' : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'}`}>
-                    <opt.icon className={`w-8 h-8 ${isDark === opt.dark ? 'text-cyber-neon' : 'text-slate-400'}`} />
-                    <span className={`text-sm font-bold ${isDark === opt.dark ? 'text-white' : 'text-slate-500'}`}>{opt.label}</span>
-                    <span className="text-xs text-slate-400">{opt.desc}</span>
-                  </button>
-                ))}
-              </div>
-            </Section>
+            {/* Theme section removed for unified dark aesthetic */}
           </div>
         </div>
       )}
@@ -303,15 +288,15 @@ export default function Profile() {
           {/* Stat Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { label: 'Threats Viewed', value: activity.threatsViewed, icon: Search, color: 'from-blue-500 to-indigo-600' },
-              { label: 'CVEs Analyzed', value: activity.cvesAnalyzed, icon: Shield, color: 'from-purple-500 to-cyber-accent' },
+              { label: 'Threats Viewed', value: activity.threatsViewed, icon: Search, color: 'from-emerald-500 to-teal-600' },
+              { label: 'CVEs Analyzed', value: activity.cvesAnalyzed, icon: Shield, color: 'from-emerald-500 to-cyber-accent' },
               { label: 'Last Login', value: activity.lastLogin, icon: Clock, color: 'from-emerald-500 to-green-600', small: true },
             ].map((stat, i) => (
               <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                className="glass-card-hover p-6 flex items-center justify-between group">
+                className="liquid-glass p-6 rounded-xl border border-white/10 flex items-center justify-between group hover:scale-[1.02] transition duration-300">
                 <div>
                   <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{stat.label}</h3>
-                  <p className={`${stat.small ? 'text-lg' : 'text-3xl'} font-bold mt-2 text-slate-800 dark:text-white group-hover:text-indigo-500 dark:group-hover:text-cyber-neon transition-colors`}>{stat.value}</p>
+                  <p className={`${stat.small ? 'text-lg' : 'text-3xl'} font-bold mt-2 text-slate-800 dark:text-white group-hover:text-emerald-500 dark:group-hover:text-cyber-neon transition-colors`}>{stat.value}</p>
                 </div>
                 <div className={`p-4 rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg`}>
                   <stat.icon className="w-8 h-8 text-white" />

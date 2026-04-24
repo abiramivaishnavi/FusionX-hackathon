@@ -9,18 +9,26 @@ const severityColors = {
   UNKNOWN: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30',
 };
 
+const severityBorder = {
+  CRITICAL: 'border-l-red-500',
+  HIGH: 'border-l-orange-500',
+  MEDIUM: 'border-l-yellow-500',
+  LOW: 'border-l-green-500',
+  UNKNOWN: 'border-l-slate-500',
+};
+
 export default function ThreatCard({ threat, onClick }) {
   const sevColor = severityColors[threat.severity?.toUpperCase()] || severityColors.UNKNOWN;
+  const leftBorder = severityBorder[threat.severity?.toUpperCase()] || severityBorder.UNKNOWN;
 
   return (
     <motion.div 
-      whileHover={{ y: -4, scale: 1.01 }}
       onClick={() => onClick(threat)}
-      className="glass-card-hover p-5 cursor-pointer flex flex-col justify-between group h-full"
+      className={`liquid-glass p-5 rounded-xl border border-white/10 hover:border-primary/40 hover:shadow-[0_0_20px_rgba(94,210,156,0.15)] transition duration-300 cursor-pointer flex flex-col justify-between group h-full border-l-4 ${leftBorder}`}
     >
       <div>
         <div className="flex justify-between items-start mb-3">
-          <h4 className="font-bold text-lg text-slate-800 dark:text-white group-hover:text-indigo-500 dark:group-hover:text-cyber-neon transition-colors">
+          <h4 className="font-bold text-lg text-slate-800 dark:text-white group-hover:text-emerald-500 dark:group-hover:text-cyber-neon transition-colors">
             {threat.id}
           </h4>
           <span className={`px-2 py-1 rounded-md text-[10px] uppercase font-bold border ${sevColor}`}>
