@@ -3,8 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight, Zap, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { auth } from '../lib/firebase';
-import { GoogleAuthProvider, GithubAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider, githubProvider } from '../lib/firebase';
+import {
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
+  linkWithCredential,
+  GoogleAuthProvider,
+  GithubAuthProvider,
+} from 'firebase/auth';
 
 // Floating particle component for the cyber background
 function FloatingParticles() {
@@ -75,9 +83,38 @@ function ScanLine() {
   );
 }
 
+// Friendly Firebase error messages
+function friendlyError(code) {
+  const map = {
+    'auth/user-not-found': 'No account found with this email.',
+    'auth/wrong-password': 'Incorrect password. Please try again.',
+    'auth/invalid-credential': 'Invalid email or password.',
+    'auth/invalid-login-credentials': 'Invalid email or password.',
+    'auth/email-already-in-use': 'This email is already registered. Try logging in.',
+    'auth/weak-password': 'Password must be at least 6 characters.',
+    'auth/invalid-email': 'Please enter a valid email address.',
+    'auth/popup-closed-by-user': 'Sign-in popup was closed. Please try again.',
+    'auth/cancelled-popup-request': 'Another popup is already open.',
+    'auth/popup-blocked': 'Popup was blocked. Please allow popups and try again.',
+    'auth/network-request-failed': 'Network error. Check your connection and try again.',
+    'auth/operation-not-allowed': 'Email/password sign-in is not enabled. Please contact support.',
+    'auth/too-many-requests': 'Too many failed attempts. Please wait a moment and try again.',
+    'auth/user-disabled': 'This account has been disabled.',
+    'auth/missing-password': 'Please enter your password.',
+    'auth/missing-email': 'Please enter your email address.',
+    'auth/requires-recent-login': 'Please log in again to continue.',
+    'auth/credential-already-in-use': 'This credential is already linked to another account.',
+  };
+  if (!map[code]) {
+    console.error('[Firebase Auth Error] Unhandled error code:', code);
+  }
+  return map[code] || `Authentication failed (${code}). Please try again.`;
+}
+
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { isAuthenticated } = useAuth();
+
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -89,6 +126,12 @@ export default function Login() {
     confirmPassword: '',
     name: '',
   });
+
+  // Redirect if already logged in
+  if (isAuthenticated) {
+    navigate('/dashboard', { replace: true });
+    return null;
+  }
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -109,42 +152,98 @@ export default function Login() {
       return;
     }
 
+    if (!isLogin && formData.password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+
     setIsLoading(true);
-
-    // Simulate authentication delay
-    await new Promise((resolve) => setTimeout(resolve, 1800));
-
-    setIsLoading(false);
-    navigate('/dashboard');
-  };
-
-  const handleGoogleLogin = async () => {
     try {
-      setIsLoading(true);
-      setError('');
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      navigate('/dashboard');
+      if (isLogin) {
+        await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      } else {
+        await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      }
+      navigate('/dashboard', { replace: true });
     } catch (err) {
-      console.error(err);
-      setError(err.message || 'Failed to login with Google');
+      setError(friendlyError(err.code));
       setIsLoading(false);
     }
   };
 
-  const handleGithubLogin = async () => {
+  const handleSocialLogin = async (provider) => {
+    setIsLoading(true);
+    setError('');
     try {
-      setIsLoading(true);
-      setError('');
-      const provider = new GithubAuthProvider();
       await signInWithPopup(auth, provider);
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err) {
-      console.error(err);
-      setError(err.message || 'Failed to login with GitHub');
-      setIsLoading(false);
+      if (err.code === 'auth/account-exists-with-different-credential') {
+        /**
+         * The user's email is already registered with a different provider.
+         * Correct fix:
+         *  1. Extract the pending credential from the error
+         *  2. Fetch which provider already owns this email
+         *  3. Sign in with that existing provider
+         *  4. Link the pending credential so future logins with either provider work
+         */
+        try {
+          const email = err.customData?.email;
+          // Grab the OAuth credential that failed (e.g. GitHub token)
+          const pendingCred =
+            GithubAuthProvider.credentialFromError(err) ||
+            GoogleAuthProvider.credentialFromError(err);
+
+          // Determine which provider owns the email
+          const methods = await fetchSignInMethodsForEmail(auth, email);
+          const existingMethod = methods[0];
+          const existingProviderName =
+            existingMethod === 'google.com' ? 'Google' :
+            existingMethod === 'github.com' ? 'GitHub' : existingMethod;
+
+          setError(
+            `This email is linked to ${existingProviderName}. ` +
+            `Opening ${existingProviderName} sign-in to merge your accounts…`
+          );
+
+          // Sign in with the existing provider
+          let existingProvider;
+          if (existingMethod === 'google.com') {
+            existingProvider = new GoogleAuthProvider();
+            existingProvider.setCustomParameters({ login_hint: email });
+          } else if (existingMethod === 'github.com') {
+            existingProvider = new GithubAuthProvider();
+          } else {
+            // password — can't auto-link, tell them to use the form
+            setError('This email uses password sign-in. Please enter your password above.');
+            setIsLoading(false);
+            return;
+          }
+
+          // Sign in then link the pending credential
+          const result = await signInWithPopup(auth, existingProvider);
+          if (pendingCred) {
+            await linkWithCredential(result.user, pendingCred);
+          }
+          navigate('/dashboard', { replace: true });
+        } catch (linkErr) {
+          // If the user closed the popup during account linking, don't show a confusing error
+          if (linkErr.code === 'auth/popup-closed-by-user') {
+            setError('Sign-in was cancelled. Please try again.');
+          } else {
+            setError(friendlyError(linkErr.code));
+          }
+          setIsLoading(false);
+        }
+      } else {
+        setError(friendlyError(err.code));
+        setIsLoading(false);
+      }
     }
   };
+
+  const handleGoogleLogin = () => handleSocialLogin(googleProvider);
+  const handleGithubLogin = () => handleSocialLogin(githubProvider);
 
   const inputClasses =
     'w-full px-4 py-3.5 pl-12 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-cyber-accent/60 focus:ring-2 focus:ring-cyber-accent/20 transition-all duration-300 backdrop-blur-sm';
@@ -205,6 +304,7 @@ export default function Login() {
                     ? 'bg-gradient-to-r from-cyber-accent/30 to-emerald-600/30 text-white border border-cyber-accent/30 shadow-lg shadow-cyber-accent/10'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
+                id={`tab-${tab.toLowerCase()}`}
               >
                 {tab}
               </button>
@@ -374,7 +474,7 @@ export default function Login() {
               type="button"
               onClick={handleGithubLogin}
               disabled={isLoading}
-              className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-slate-300 hover:bg-white/10 hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-slate-300 hover:bg-white/10 hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               id="login-github-btn"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -386,7 +486,7 @@ export default function Login() {
               type="button"
               onClick={handleGoogleLogin}
               disabled={isLoading}
-              className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-slate-300 hover:bg-white/10 hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-slate-300 hover:bg-white/10 hover:border-white/20 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               id="login-google-btn"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">

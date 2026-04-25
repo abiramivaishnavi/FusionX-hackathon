@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Bookmark } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, Bookmark, LogOut } from 'lucide-react';
 import { useBookmarks } from '../hooks/useBookmarks';
+import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { bookmarks } = useBookmarks();
+  const { user, logout } = useAuth();
 
   const navLinks = [
     { label: 'DASHBOARD', to: '/dashboard' },
@@ -16,6 +19,11 @@ export default function Navbar() {
   ];
 
   const isHome = location.pathname === '/';
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <>
@@ -29,7 +37,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Links & Actions */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-6">
             <nav className="flex items-center gap-8">
               {navLinks.map((l) => (
                 <Link
@@ -45,6 +53,7 @@ export default function Navbar() {
                 </Link>
               ))}
             </nav>
+
             {/* Bookmark Badge */}
             <div className="relative flex items-center justify-center p-2 rounded-full bg-white/5 border border-white/10">
               <Bookmark className="w-5 h-5 text-white/80" />
@@ -54,6 +63,32 @@ export default function Navbar() {
                 </span>
               )}
             </div>
+
+            {/* User avatar + logout */}
+            {user && (
+              <div className="flex items-center gap-3">
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || 'User'}
+                    className="w-8 h-8 rounded-full border border-white/20 object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full border border-white/20 bg-gradient-to-br from-emerald-600 to-cyber-accent flex items-center justify-center text-white text-xs font-bold">
+                    {(user.displayName || user.email || 'U')[0].toUpperCase()}
+                  </div>
+                )}
+                <button
+                  onClick={handleLogout}
+                  id="navbar-logout-btn"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all text-xs font-medium"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Sign Out
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Mobile Actions */}
@@ -97,6 +132,16 @@ export default function Navbar() {
               {l.label}
             </Link>
           ))}
+          {user && (
+            <button
+              onClick={() => { setMobileOpen(false); handleLogout(); }}
+              className="flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors text-lg"
+              id="mobile-logout-btn"
+            >
+              <LogOut className="w-5 h-5" />
+              Sign Out
+            </button>
+          )}
         </div>
       )}
     </>

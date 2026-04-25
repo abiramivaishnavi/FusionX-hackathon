@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  User, Mail, Shield, Camera, Lock, Bell, Sun, Moon,
+  User, Mail, Shield, Camera, Lock, Bell,
   Eye, EyeOff, Save, CheckCircle, Activity, Clock,
   AlertTriangle, Search, LogOut, ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { updateProfile } from 'firebase/auth';
+import { auth } from '../lib/firebase';
 
 // --- Section Wrapper ---
 function Section({ title, icon: Icon, children, delay = 0 }) {
@@ -52,19 +54,45 @@ function Toast({ message, visible, onClose }) {
 const inputClass =
   'bg-transparent border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-2 w-full transition duration-300 text-white placeholder-slate-400';
 
+// Helper: generate a colour-consistent gradient avatar from initials
+function InitialAvatar({ name, email, size = 'w-36 h-36' }) {
+  const letter = (name || email || 'U')[0].toUpperCase();
+  return (
+    <div
+      className={`${size} rounded-2xl border-2 border-cyber-accent/30 shadow-neon flex items-center justify-center bg-gradient-to-br from-emerald-700 to-cyber-accent text-white font-extrabold text-5xl select-none`}
+    >
+      {letter}
+    </div>
+  );
+}
+
 export default function Profile() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [toast, setToast] = useState({ visible: false, message: '' });
+  const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
 
-  // --- Profile State ---
+  // --- Profile State — seeded from Firebase user ---
+  const roleKey = user?.uid ? `profile_role_${user.uid}` : null;
   const [profile, setProfile] = useState({
-    name: 'Alex Morgan',
-    email: 'alex.morgan@cyberpulse.io',
-    role: 'Security Analyst',
+    name: user?.displayName || '',
+    email: user?.email || '',
+    role: (roleKey && localStorage.getItem(roleKey)) || 'Security Analyst',
   });
-  const [avatarPreview, setAvatarPreview] = useState('/default-avatar.png');
+  const [avatarPreview, setAvatarPreview] = useState(user?.photoURL || null);
+
+  // Re-sync whenever the Firebase user object changes (e.g. after updateProfile)
+  useEffect(() => {
+    if (user) {
+      setProfile((prev) => ({
+        ...prev,
+        name: user.displayName || prev.name,
+        email: user.email || prev.email,
+      }));
+      setAvatarPreview(user.photoURL || null);
+    }
+  }, [user]);
 
   // --- Settings State ---
   const [showOldPw, setShowOldPw] = useState(false);
@@ -76,13 +104,16 @@ export default function Profile() {
     newCVE: false,
     emailNotifs: true,
   });
-  const [isDark, setIsDark] = useState(true);
 
   // --- Activity State (simulated) ---
+  const lastLoginDate = user?.metadata?.lastSignInTime
+    ? new Date(user.metadata.lastSignInTime).toLocaleString()
+    : new Date(Date.now() - 3600000).toLocaleString();
+
   const [activity] = useState({
     threatsViewed: 247,
     cvesAnalyzed: 89,
-    lastLogin: new Date(Date.now() - 3600000).toLocaleString(),
+    lastLogin: lastLoginDate,
     recentCVEs: [
       { id: 'CVE-2026-1234', severity: 'CRITICAL', date: '2026-04-24' },
       { id: 'CVE-2026-0987', severity: 'HIGH', date: '2026-04-23' },
@@ -92,13 +123,6 @@ export default function Profile() {
     ],
   });
 
-  // Sync theme toggle
-  useEffect(() => {
-    const root = document.documentElement;
-    if (isDark) { root.classList.add('dark'); localStorage.setItem('theme', 'dark'); }
-    else { root.classList.remove('dark'); localStorage.setItem('theme', 'light'); }
-  }, [isDark]);
-
   const showToast = (msg) => setToast({ visible: true, message: msg });
   const hideToast = () => setToast({ visible: false, message: '' });
 
@@ -107,9 +131,22 @@ export default function Profile() {
     if (file) setAvatarPreview(URL.createObjectURL(file));
   };
 
-  const handleSaveProfile = (e) => {
+  // Persist name to Firebase + role to localStorage
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
-    showToast('Profile updated successfully');
+    setIsSaving(true);
+    try {
+      if (auth.currentUser && profile.name !== user?.displayName) {
+        await updateProfile(auth.currentUser, { displayName: profile.name });
+      }
+      if (roleKey) localStorage.setItem(roleKey, profile.role);
+      showToast('Profile updated successfully');
+    } catch (err) {
+      console.error('Profile update failed:', err);
+      showToast('Failed to save. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleChangePassword = (e) => {
@@ -168,16 +205,24 @@ export default function Profile() {
             <div className="flex flex-col items-center gap-5 relative z-10">
               <div className="relative group flex items-center justify-center">
                 <div className="absolute w-40 h-40 bg-primary/20 blur-3xl rounded-full" />
-                <div className="w-36 h-36 rounded-2xl overflow-hidden border-2 border-cyber-accent/30 shadow-neon relative z-10">
-                  <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />
+                <div className="relative z-10">
+                  {avatarPreview ? (
+                    <div className="w-36 h-36 rounded-2xl overflow-hidden border-2 border-cyber-accent/30 shadow-neon">
+                      <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    </div>
+                  ) : (
+                    <InitialAvatar name={profile.name} email={profile.email} />
+                  )}
                 </div>
-                <label htmlFor="avatar-upload" className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity cursor-pointer">
+                <label htmlFor="avatar-upload" className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity cursor-pointer z-20">
                   <Camera className="w-8 h-8 text-white" />
                 </label>
                 <input type="file" id="avatar-upload" accept="image/*" className="hidden" onChange={handleAvatarChange} />
               </div>
               <div className="text-center">
-                <p className="font-bold text-slate-800 dark:text-white text-lg">{profile.name}</p>
+                <p className="font-bold text-slate-800 dark:text-white text-lg">
+                  {profile.name || profile.email?.split('@')[0] || 'Analyst'}
+                </p>
                 <p className="text-sm text-slate-500 dark:text-slate-400">{profile.email}</p>
                 <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-semibold bg-cyber-accent/15 text-cyber-neon border border-cyber-accent/20">
                   <Shield className="w-3.5 h-3.5" /> {profile.role}
@@ -211,9 +256,9 @@ export default function Profile() {
                   </select>
                 </div>
                 <div className="flex justify-end pt-2">
-                  <motion.button type="submit" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} id="save-profile-btn"
-                    className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white rounded-full px-6 py-3 shadow-lg shadow-primary/20 font-bold transition duration-300">
-                    <Save className="w-4 h-4" /> Save Changes
+                  <motion.button type="submit" disabled={isSaving} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} id="save-profile-btn"
+                    className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white rounded-full px-6 py-3 shadow-lg shadow-primary/20 font-bold transition duration-300 disabled:opacity-60 disabled:cursor-not-allowed">
+                    <Save className="w-4 h-4" /> {isSaving ? 'Saving...' : 'Save Changes'}
                   </motion.button>
                 </div>
               </form>

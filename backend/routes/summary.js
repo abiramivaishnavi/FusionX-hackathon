@@ -3,7 +3,17 @@ const router = express.Router();
 const fetchNVD = require("../utils/fetchNVD");
 const Groq = require("groq-sdk");
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// Lazy init — avoids crash at startup if GROQ_API_KEY is missing
+let _groq = null;
+function getGroq() {
+    if (!_groq) {
+        if (!process.env.GROQ_API_KEY) {
+            throw new Error("GROQ_API_KEY is not set in .env");
+        }
+        _groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    }
+    return _groq;
+}
 
 // Simple in-memory cache
 const cache = new Map();
@@ -39,6 +49,7 @@ router.get("/:id", async (req, res) => {
         const startTime = Date.now();
 
         // Use Groq for intelligent summary
+        const groq = getGroq();
         const completion = await groq.chat.completions.create({
             messages: [{
                 role: "user",

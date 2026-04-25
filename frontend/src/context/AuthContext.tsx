@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User, signOut as firebaseSignOut } from 'firebase/auth';
+import {
+  onAuthStateChanged,
+  signOut as firebaseSignOut,
+  User,
+} from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
 interface AuthContextType {
@@ -7,7 +11,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   logout: () => Promise<void>;
-  login: () => void; // for backwards compatibility with existing UI mocks if needed
+  login: () => void; // kept for backwards compatibility
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -31,7 +35,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(currentUser);
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -43,12 +46,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = () => {
-    // This is just a placeholder to prevent crashes if existing components still call it
-    // Firebase handles actual auth state internally
-  };
+  // No-op kept so existing components that call login() don't crash
+  const login = () => {};
 
-  const value = {
+  const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
     loading,
@@ -58,7 +59,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {/* Render children regardless of loading — ProtectedRoute handles the guard */}
+      {children}
     </AuthContext.Provider>
   );
 }
