@@ -17,34 +17,36 @@ function AppRoutes() {
   const { isAuthenticated } = useAuth();
   
   return (
-    <Routes>
-      <Route path="/login" element={
-        isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
-      } />
-      
-      <Route path="/*" element={
-        <ProtectedRoute>
-          <>
-            <Navbar />
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/*" element={
-                <main className="max-w-7xl mx-auto px-6 py-8 relative z-10">
-                  <Routes>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/cve/:id" element={<CveDetails />} />
-                    <Route path="/recommendations" element={<Recommendations />} />
-                    <Route path="/recommendation/:id" element={<RecommendationDetails />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/profile" element={<Profile />} />
-                  </Routes>
-                </main>
-              } />
-            </Routes>
-          </>
-        </ProtectedRoute>
-      } />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/login" element={
+          isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
+        } />
+        
+        <Route path="/*" element={
+          <ProtectedRoute>
+            <>
+              <Navbar />
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/*" element={
+                  <main className="max-w-7xl mx-auto px-6 py-8 relative z-10">
+                    <Routes>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/cve/:id" element={<CveDetails />} />
+                      <Route path="/recommendations" element={<Recommendations />} />
+                      <Route path="/recommendation/:id" element={<RecommendationDetails />} />
+                      <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/profile" element={<Profile />} />
+                    </Routes>
+                  </main>
+                } />
+              </Routes>
+            </>
+          </ProtectedRoute>
+        } />
+      </Routes>
+    </>
   );
 }
 

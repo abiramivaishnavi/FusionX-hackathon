@@ -1,57 +1,76 @@
 const express = require("express");
 const router = express.Router();
+const Groq = require("groq-sdk");
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+const cache = new Map();
+const CACHE_EXPIRY = 60 * 60 * 1000;
 
 router.post("/", async (req, res) => {
     try {
         const { cve } = req.body;
-        
-        if (!cve) {
-            return res.status(400).json({ error: "Missing CVE data" });
-        }
+        if (!cve) return res.status(400).json({ error: "CVE data required" });
 
-        const prompt = `
-You are a cybersecurity expert.
+        const cveId = cve.id;
 
-Given this vulnerability:
-CVE ID: ${cve.id}
-Description: ${cve.description}
-Severity: ${cve.severity}
-
-Generate a structured response with:
-
-1. Immediate Actions (urgent fixes)
-2. Mitigation Steps (temporary protections)
-3. Long-Term Fixes (permanent solutions)
-4. Risk Summary (impact and exploitability)
-
-Keep it clear, concise, and actionable.
-`;
-
-        const response = await fetch(
-            "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
-            {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${process.env.HF_API_KEY}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ inputs: prompt })
+        // Check cache ⚡
+        if (cache.has(cveId)) {
+            const cached = cache.get(cveId);
+            if (Date.now() - cached.storedAt < CACHE_EXPIRY) {
+                console.log(`Cache HIT ⚡ for ${cveId}`);
+                return res.json({ solution: cached.solution, cached: true });
             }
-        );
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("HF Error:", errorText);
-            return res.status(response.status).json({ error: `Hugging Face API error: ${response.status}`, details: errorText });
+            cache.delete(cveId);
         }
 
-        const data = await response.json();
-        const solution = data[0]?.generated_text || data.generated_text || "No AI response available";
-        
-        res.json({ solution });
+        const completion = await groq.chat.completions.create({
+            messages: [{
+                role: "user",
+                content: `You are a senior cybersecurity expert. Analyze this CVE.
+
+CVE ID: ${cveId}
+Severity: ${cve.severity}
+Score: ${cve.score || "N/A"}
+Description: ${cve.description}
+
+Respond in this HTML format exactly:
+
+<h3>⚠️ Risk Analysis</h3>
+<p>Specific risk and exploitation method</p>
+
+<h3>📍 Impact Assessment</h3>
+<p>Affected systems, users, or data</p>
+
+<h3>🛠️ Immediate Actions</h3>
+<ul>
+<li>Action 1</li>
+<li>Action 2</li>
+<li>Action 3</li>
+</ul>
+
+<h3>🔒 Long-term Mitigation</h3>
+<ul>
+<li>Step 1</li>
+<li>Step 2</li>
+</ul>
+
+Be specific and technical. Do not repeat the description.`
+            }],
+            model: "llama-3.3-70b-versatile",
+            max_tokens: 500,
+            temperature: 0.3
+        });
+
+        const solution = completion.choices[0]?.message?.content || "No solution available";
+        cache.set(cveId, { solution, storedAt: Date.now() });
+        console.log(`✅ Recommendation generated for ${cveId}`);
+
+        res.json({ solution, cached: false });
+
     } catch (err) {
-        console.error("Recommendation API error:", err.message);
-        res.status(500).json({ error: "Failed to generate AI solution", details: err.message });
+        console.error("Recommendations error:", err.message);
+        res.status(500).json({ error: "Failed to generate", details: err.message });
     }
 });
 

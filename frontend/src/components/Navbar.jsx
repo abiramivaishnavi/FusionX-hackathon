@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Bookmark } from 'lucide-react';
+import { useBookmarks } from '../hooks/useBookmarks';
 
 export default function Navbar() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { bookmarks } = useBookmarks();
 
   const navLinks = [
     { label: 'DASHBOARD', to: '/dashboard' },
@@ -26,31 +28,52 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Links */}
-          <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((l) => (
-              <Link
-                key={l.label}
-                to={l.to}
-                className={`font-inter text-[16px] tracking-wide transition-colors duration-200 ${
-                  location.pathname === l.to
-                    ? 'text-codenest-green font-semibold'
-                    : 'text-white/70 hover:text-codenest-green'
-                }`}
-              >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
+          {/* Desktop Links & Actions */}
+          <div className="hidden md:flex items-center gap-8">
+            <nav className="flex items-center gap-8">
+              {navLinks.map((l) => (
+                <Link
+                  key={l.label}
+                  to={l.to}
+                  className={`font-inter text-[16px] tracking-wide transition-colors duration-200 ${
+                    location.pathname === l.to
+                      ? 'text-codenest-green font-semibold'
+                      : 'text-white/70 hover:text-codenest-green'
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </nav>
+            {/* Bookmark Badge */}
+            <div className="relative flex items-center justify-center p-2 rounded-full bg-white/5 border border-white/10">
+              <Bookmark className="w-5 h-5 text-white/80" />
+              {bookmarks.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-emerald-500 text-black text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {bookmarks.length}
+                </span>
+              )}
+            </div>
+          </div>
 
-          {/* Mobile Toggle */}
-          <button
-            className="md:hidden text-white"
-            onClick={() => setMobileOpen(true)}
-            aria-label="Open menu"
-          >
-            <Menu size={26} />
-          </button>
+          {/* Mobile Actions */}
+          <div className="flex md:hidden items-center gap-4">
+            <div className="relative">
+              <Bookmark className="w-6 h-6 text-white" />
+              {bookmarks.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-emerald-500 text-black text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {bookmarks.length}
+                </span>
+              )}
+            </div>
+            <button
+              className="text-white"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open menu"
+            >
+              <Menu size={26} />
+            </button>
+          </div>
         </div>
       </header>
 

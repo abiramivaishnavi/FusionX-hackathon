@@ -11,23 +11,21 @@ const severityColors: Record<string, string> = {
   UNKNOWN: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30',
 };
 
+// ← ADD THIS FUNCTION
 async function generateSolution(cve: any) {
   const response = await fetch("http://localhost:5000/api/recommendations", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ cve })
   });
 
   const data = await response.json();
-  
   if (!response.ok) {
     throw new Error(data.error || `API error: ${response.status}`);
   }
-
   return data.solution || "No AI response available";
 }
+
 
 export default function RecommendationDetails() {
   const { id } = useParams<{ id: string }>();
@@ -36,7 +34,7 @@ export default function RecommendationDetails() {
   const [threat, setThreat] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [solution, setSolution] = useState<string | null>(null);
   const [solutionLoading, setSolutionLoading] = useState(true);
   const [solutionError, setSolutionError] = useState<string | null>(null);
@@ -88,7 +86,7 @@ export default function RecommendationDetails() {
           <ShieldAlert className="w-12 h-12 mx-auto mb-4 opacity-80" />
           <h2 className="text-xl font-bold mb-2">Error</h2>
           <p>{error}</p>
-          <button 
+          <button
             onClick={() => navigate('/recommendations')}
             className="mt-6 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors font-medium"
           >
@@ -103,7 +101,7 @@ export default function RecommendationDetails() {
 
   return (
     <div className="min-h-screen bg-background text-foreground px-6 py-10 relative z-10">
-      <button 
+      <button
         onClick={() => navigate('/recommendations')}
         className={`flex items-center gap-2 text-muted-foreground transition-colors mb-8 font-medium ${solutionLoading ? 'opacity-50 cursor-not-allowed' : 'hover:text-primary'}`}
         disabled={solutionLoading}
@@ -139,36 +137,36 @@ export default function RecommendationDetails() {
             <span className="bg-primary text-primary-foreground px-3 py-1 rounded text-sm tracking-widest font-bold">AI</span>
             Solution Generated
           </h2>
-          
+
           <div className="relative z-10 min-h-[200px]">
             {solutionLoading ? (
-               <div className="flex flex-col items-center justify-center gap-4 py-10">
-                 <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                 <p className="text-primary font-medium animate-pulse">Generating expert solution via Hugging Face...</p>
-                 <div className="w-full max-w-md h-2 bg-primary/20 rounded-full overflow-hidden mt-4">
-                   <div className="h-full bg-primary animate-[pulse_1.5s_ease-in-out_infinite]" style={{ width: '60%' }}></div>
-                 </div>
-               </div>
+              <div className="flex flex-col items-center justify-center gap-4 py-10">
+                <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                <p className="text-primary font-medium animate-pulse">Generating expert solution via Hugging Face...</p>
+                <div className="w-full max-w-md h-2 bg-primary/20 rounded-full overflow-hidden mt-4">
+                  <div className="h-full bg-primary animate-[pulse_1.5s_ease-in-out_infinite]" style={{ width: '60%' }}></div>
+                </div>
+              </div>
             ) : solutionError ? (
-               <div className="p-5 bg-red-500/10 border border-red-500/30 text-red-500 rounded-lg">
-                 <div className="flex items-center gap-2 mb-2 font-semibold">
-                   <ShieldAlert className="w-5 h-5" /> 
-                   Failed to generate AI solution
-                 </div>
-                 <p className="text-sm opacity-90">{solutionError}</p>
-                 <div className="mt-4 pt-4 border-t border-red-500/20">
-                   <p className="text-sm font-medium">Rule-based suggestions:</p>
-                   <ul className="list-disc list-inside mt-2 text-sm opacity-80 space-y-1">
-                     <li>Check vendor patches immediately.</li>
-                     <li>Isolate affected systems from public networks.</li>
-                     <li>Monitor logs for indicators of compromise.</li>
-                   </ul>
-                 </div>
-               </div>
+              <div className="p-5 bg-red-500/10 border border-red-500/30 text-red-500 rounded-lg">
+                <div className="flex items-center gap-2 mb-2 font-semibold">
+                  <ShieldAlert className="w-5 h-5" />
+                  Failed to generate AI solution
+                </div>
+                <p className="text-sm opacity-90">{solutionError}</p>
+                <div className="mt-4 pt-4 border-t border-red-500/20">
+                  <p className="text-sm font-medium">Rule-based suggestions:</p>
+                  <ul className="list-disc list-inside mt-2 text-sm opacity-80 space-y-1">
+                    <li>Check vendor patches immediately.</li>
+                    <li>Isolate affected systems from public networks.</li>
+                    <li>Monitor logs for indicators of compromise.</li>
+                  </ul>
+                </div>
+              </div>
             ) : (
-              <div 
-                className="prose dark:prose-invert prose-p:leading-relaxed max-w-none text-slate-700 dark:text-slate-200 text-lg" 
-                dangerouslySetInnerHTML={{__html: solution?.replace(/\n/g, '<br />') || ''}}
+              <div
+                className="prose dark:prose-invert prose-p:leading-relaxed max-w-none text-slate-700 dark:text-slate-200 text-lg"
+                dangerouslySetInnerHTML={{ __html: solution?.replace(/\n/g, '<br />') || '' }}
               />
             )}
           </div>

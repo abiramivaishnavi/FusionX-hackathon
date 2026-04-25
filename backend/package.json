@@ -14,6 +14,9 @@
     "axios": "^1.15.2",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.4.1",
+    "groq-sdk": "^1.1.2",
+    "json2csv": "^6.0.0-alpha.2"
   }
 }

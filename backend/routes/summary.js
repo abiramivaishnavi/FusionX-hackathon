@@ -1,54 +1,84 @@
 const express = require("express");
 const router = express.Router();
 const fetchNVD = require("../utils/fetchNVD");
+const Groq = require("groq-sdk");
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+// Simple in-memory cache
+const cache = new Map();
+const CACHE_EXPIRY = 60 * 60 * 1000; // 1 hour
 
 router.get("/:id", async (req, res) => {
     try {
-        const data = await fetchNVD();
-        const threat = data.find(t => t.id === req.params.id);
-        if (!threat) return res.status(404).json({ error: "CVE not found" });
+        const cveId = req.params.id;
 
-        const prompt = `Summarize this cybersecurity vulnerability in 3 lines:
-1. Risk: what is the risk
-2. Impact: what is affected
-3. Fix: how to fix it
-Vulnerability: ${threat.description}
-Summary:`;
+        // Check cache first ⚡
+        if (cache.has(cveId)) {
+            const cached = cache.get(cveId);
+            const isExpired = Date.now() - cached.storedAt > CACHE_EXPIRY;
 
-        const response = await fetch(
-            "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn",
-            {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${process.env.HF_API_KEY}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    inputs: threat.description,
-                    parameters: {
-                        max_length: 150,
-                        min_length: 50
-                    }
-                })
+            if (!isExpired) {
+                console.log(`Cache HIT ⚡ for ${cveId}`);
+                return res.json({
+                    id: cveId,
+                    summary: cached.summary,
+                    cached: true,
+                    generatedAt: cached.storedAt
+                });
+            } else {
+                cache.delete(cveId);
             }
-        );
-
-        // Check if response is ok before parsing
-        if (!response.ok) {
-            const text = await response.text();
-            console.error("HF API error:", text);
-            return res.status(500).json({ error: "HF API error", details: text });
         }
 
-        const result = await response.json();
-        console.log("HF result:", JSON.stringify(result));
+        // Not cached — fetch CVE
+        const data = await fetchNVD();
+        const threat = data.find(t => t.id === cveId);
+        if (!threat) return res.status(404).json({ error: "CVE not found" });
 
-        const summary = result?.[0]?.summary_text || "No summary available";
-        res.json({ id: threat.id, summary });
+        const startTime = Date.now();
+
+        // Use Groq for intelligent summary
+        const completion = await groq.chat.completions.create({
+            messages: [{
+                role: "user",
+                content: `You are a cybersecurity expert. Analyze this CVE and give exactly 3 lines:
+1. ⚠️ Risk: What is the specific security risk
+2. 📍 Impact: What systems or users are affected  
+3. 🛠️ Fix: What is the recommended fix or mitigation
+
+CVE ID: ${cveId}
+Description: ${threat.description}
+
+Be specific, technical, and concise. Do not repeat the description.`
+            }],
+            model: "llama-3.3-70b-versatile",
+            max_tokens: 200,
+            temperature: 0.3
+        });
+
+        const summary = completion.choices[0]?.message?.content || "No summary available";
+        const responseTime = Date.now() - startTime;
+
+        // Store in cache
+        cache.set(cveId, {
+            summary,
+            storedAt: Date.now()
+        });
+
+        console.log(`Cache MISS — generated in ${responseTime}ms for ${cveId}`);
+
+        res.json({
+            id: cveId,
+            summary,
+            cached: false,
+            generatedAt: Date.now(),
+            responseTime
+        });
 
     } catch (err) {
-        console.error("AI summary failed:", err.message);
-        res.status(500).json({ error: "AI summary failed", details: err.message });
+        console.error("Summary failed:", err.message);
+        res.status(500).json({ error: "Summary failed", details: err.message });
     }
 });
 
