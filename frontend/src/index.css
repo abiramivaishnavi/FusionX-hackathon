@@ -121,3 +121,13 @@
 .glow-pulse {
   animation: subtlePulse 4s ease-in-out infinite;
 }
+
+@keyframes pulse-threat {
+  0% { opacity: 0.2; }
+  50% { opacity: 1; }
+  100% { opacity: 0.2; }
+}
+
+.threat-line-pulse {
+  animation: pulse-threat 2s infinite ease-in-out;
+}

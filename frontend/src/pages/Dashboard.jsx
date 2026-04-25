@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Shield, AlertTriangle, AlertCircle, Activity, Loader2, Download, Filter, Search, X } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import ThreatCard from '../components/ThreatCard';
+import ThreatMap from '../components/ThreatMap';
 import { useBookmarks } from '../hooks/useBookmarks';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -118,6 +119,10 @@ export default function Dashboard() {
   return (
     <div className="space-y-10 font-sans pb-10">
       <Toaster position="bottom-right" toastOptions={{ style: { background: '#13131a', color: '#fff', border: '1px solid #2a2a35' }, duration: 4000 }} />
+
+      <div className="space-y-6">
+        <ThreatMap />
+      </div>
 
       {/* Top Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
